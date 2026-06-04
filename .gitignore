@@ -1,0 +1,4 @@
+.env
+auth/token_cache.json
+__pycache__/
+*.pyc
