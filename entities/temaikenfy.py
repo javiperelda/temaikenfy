@@ -25,7 +25,9 @@ class Temaikenfy:
         self.market = os.getenv("SPOTIFY_MARKET", "AR")
         # 004 - 2026-06-14 01:34:55 - Se agrega login OAuth PKCE con refresh token
         self.redirect_uri = os.getenv("SPOTIFY_REDIRECT_URI", "http://127.0.0.1:8888/callback")
-        self.user_scopes = os.getenv("SPOTIFY_USER_SCOPES", "playlist-read-private playlist-read-collaborative")
+        # 009 - 2026-06-17 22:34:06 - Se agrega soporte para top items del usuario
+        # self.user_scopes = os.getenv("SPOTIFY_USER_SCOPES", "playlist-read-private playlist-read-collaborative")
+        self.user_scopes = os.getenv("SPOTIFY_USER_SCOPES", "playlist-read-private playlist-read-collaborative user-top-read")
 
         self.access_token = None
         self.token_expires_at = 0
@@ -349,7 +351,7 @@ class Temaikenfy:
 
         params = {            
             # "type": "artist",
-            "limit": 10,
+            "limit": 15,
             "market": self.market
         }
 
@@ -419,3 +421,48 @@ class Temaikenfy:
             offset += limit
 
         return playlists
+
+    def get_status(self):
+        
+        url = "https://api.spotify.com/v1/me"
+
+        headers = self.get_user_access_token()
+
+        response = requests.get(url, headers=headers, timeout=15)
+        response.raise_for_status()
+
+        data = response.json() 
+        if not data:
+            return None
+
+        return data
+
+    def get_top_items(self, type):
+        if type not in ["artists", "tracks"]:
+            raise ValueError("El tipo debe ser 'artists' o 'tracks'")
+
+        url = f"https://api.spotify.com/v1/me/top/{type}"
+
+        params = {
+            "time_range": "medium_term",
+            "limit": 10,
+            "offset": 0
+        }
+        
+        headers = self.get_user_access_token()
+
+        response = requests.get(url, headers=headers, params=params, timeout=15)
+        response.raise_for_status()
+
+        tops = None
+        if tops is None:
+            tops = []           
+
+        data = response.json()   
+        items = data.get("items", [])
+        tops.extend(items)    
+
+        if not tops:
+            return None
+
+        return tops

@@ -1,6 +1,8 @@
 from entities.temaikenfy import Temaikenfy
+import requests
 from rich.console import Console
 from rich.table import Table
+from util.utils import get_help_commands
 
 
 def main():
@@ -8,32 +10,60 @@ def main():
 
     while True:
         command = input("temaikenfy> ").strip()
+        command_name = command.split(maxsplit=1)[0].lower() if command else ""
 
-        if command == "exit":
+        if command_name == "exit":
             break
 
         # 004 - 2026-06-14 01:34:55 - Se agrega login OAuth PKCE con refresh token
         # if command.startswith("artista"):
-        if command == "login":
+        if command_name == "help":
+            help_command()
+        elif command_name == "login":
             app.login_user()
             print("Login realizado correctamente")
-        elif command.startswith("artista"):
-            nombre = command.replace("artista ", "", 1)
-            artist = app.buscar_artista(nombre)
-            print(artist)
+        elif command_name == "info":
+            # nombre = command.replace("artista ", "", 1)
+            # JP 16/06/2026 - Control para determinar si se ingreso el comando + el nombre del artista.
+            command_parts = command.split(maxsplit=1)
+            nombre = command_parts[1].strip() if len(command_parts) > 1 else ""     
+            if not nombre:
+                print("No se ingreso el nombre del artista que se quiere buscar.")
+                continue      
+
+            artist = app.buscar_artista(nombre)            
             if not artist:
                 print(f"No encontré el artista: {nombre}")
                 return
 
             print()
-            print(f"Artista: {artist['name']}")
-            print(f"ID: {artist.get('id', 'N/D')}")
+            # print(f"Artista: {artist['name']}")
+            # print(f"ID: {artist.get('id', 'N/D')}")
+            # JP 16/06/2026 - Formateo de info de artista.
+            format_data(
+                data=[artist],
+                title=f"Info de {nombre}",
+                columns=[
+                    {"header": "Nombre", "key": "name", "style": "cyan"},
+                    {
+                        "header": "Spotify",                        
+                        "style": "green",
+                        "value": lambda artist: artist.get("external_urls", {}).get("spotify", "N/D")
+                    },                    
+                    {"header": "ID", "key": "id", "style": "magenta"}
+                ]
+            )            
             print()
-        elif command.startswith("albums"):
-            nombre = command.replace("albums ", "", 1)
+        elif command_name == "albums":
+            # nombre = command.replace("albums ", "", 1)            
+            # JP 16/06/2026 - Control para determinar si se ingreso el comando + el nombre del artista.
+            command_parts = command.split(maxsplit=1)
+            nombre = command_parts[1].strip() if len(command_parts) > 1 else ""     
+            if not nombre:
+                print("No se ingreso el nombre del artista.")
+                continue
+
             albums = app.srch_albums(nombre)
-            # 001 - 2026-06-13 21:12:34 - Se agrega formatter dinamico con Rich para albums
-            # print(albums)
             if not albums:
                 print(f"No encontré los album del artista: {nombre}")
                 return
@@ -43,7 +73,7 @@ def main():
             # print(f"Albums de {nombre}:")
             # for album in albums:
             #     print(f"- {album.get('name', 'N/D')}")
-            # print()
+            print()
             format_data(
                 data=albums,
                 title=f"Albums de {nombre}",
@@ -58,7 +88,8 @@ def main():
                     {"header": "ID", "style": "red", "value": lambda album: album.get("id", "N/D")}
                 ]
             )
-        elif command.startswith("tracks"): 
+            print()
+        elif command_name == "tracks": 
             # 002 - 2026-06-14 00:35:42 - Se valida argumento requerido para comando tracks
             # id_album = command.replace("tracks ", "", 1)
             command_parts = command.split(maxsplit=1)
@@ -74,6 +105,9 @@ def main():
                 print(f"No encontré las canciones del id: {id_album}")
                 return    
             
+            # print(albums_tracks)
+            
+            print()
             format_data(
                 data=albums_tracks,
                 title=f"Albums de {id_album}",
@@ -90,13 +124,15 @@ def main():
                     }
                 ]
             ) 
-        elif command.startswith("playlist"):     
+            print()
+        elif command_name == "playlist":     
             command_parts = command.split(maxsplit=1)
             sec_command = command_parts[1].strip() if len(command_parts) > 1 else ""
-            if sec_command.startswith("get-all"):
+            if sec_command.lower().startswith("get-all"):
                 # 004 - 2026-06-14 01:34:55 - Se agrega login OAuth PKCE con refresh token
                 # app.get_all_playlist()
                 playlists = app.get_all_playlist()
+                print()
                 format_data(
                     data=playlists,
                     title="Playlists",
@@ -122,8 +158,133 @@ def main():
                         {"header": "ID", "key": "id", "style": "red"},
                     ]
                 )
+                print()
+        # 007 - 2026-06-17 17:47:05 - Se controla status sin usuario logueado
+        # elif command.startswith("status"): 
+        elif command_name == "status": 
+            # 007 - 2026-06-17 17:47:05 - Se controla status sin usuario logueado
+            # user = app.get_status()  
+            try:
+                user = app.get_status()
+            except ValueError as error:
+                print()
+                print(error)
+                print()
+                continue
+
+            if not user:
+                print()
+                print("No hay ningun usuario logueado. Ejecuta el comando: login")
+                print()
+                continue
+
+            print()
+            format_data(
+                data=[user],
+                title=f"Usuario conectado:",
+                columns=[
+                    {"header": "Usuario", "key": "id","style": "cyan"},
+                    {"header": "Nombre", "key": "display_name", "style": "green"},
+                    {
+                        "header": "Spotify",
+                        "style": "magenta",
+                        "value": lambda user: user.get("external_urls", {}).get("spotify", "N/D"),
+                    },                                                                       
+                    {
+                        "header": "Seguidores",
+                        "style": "yellow",
+                        "value": lambda user: user.get("followers", {}).get("total", "N/D"),
+                    },                    
+                ]
+            )  
+            print()
+        # 009 - 2026-06-17 22:34:06 - Se agrega soporte para top items del usuario
+        # elif command_name == "top-tracks":
+        elif command_name == "top-tracks":
+            try:
+                top_tracks = app.get_top_items("tracks")
+            except ValueError as error:
+                print()
+                print(error)
+                print()
+                continue
+            except requests.exceptions.HTTPError as error:
+                print()
+                if error.response is not None and error.response.status_code == 403:
+                    print("No tenes permisos para leer tus tops. Agrega user-top-read a SPOTIFY_USER_SCOPES y ejecuta login nuevamente.")
+                else:
+                    print(error)
+                print()
+                continue
+
+            if not top_tracks:
+                print()
+                print("No se encontraron tracks en tus tops.")
+                print()
+                continue
+
+            print()
+            format_data(
+                data=top_tracks,
+                title="Top canciones",
+                columns=[
+                    {"header": "Nombre", "key": "name", "style": "cyan"},
+                    {
+                        "header": "Artista",
+                        "style": "green",
+                        "value": lambda track: ", ".join([artist.get("name", "N/D") for artist in track.get("artists", [])]),
+                    },
+                    {
+                        "header": "Album",
+                        "style": "magenta",
+                        "value": lambda track: track.get("album", {}).get("name", "N/D"),
+                    },
+                ],
+            )
+            print()
+        elif command_name == "top-artists":
+            try:
+                top_artists = app.get_top_items("artists")
+            except ValueError as error:
+                print()
+                print(error)
+                print()
+                continue
+            except requests.exceptions.HTTPError as error:
+                print()
+                if error.response is not None and error.response.status_code == 403:
+                    print("No tenes permisos para leer tus tops. Agrega user-top-read a SPOTIFY_USER_SCOPES y ejecuta login nuevamente.")
+                else:
+                    print(error)
+                print()
+                continue
+
+            if not top_artists:
+                print()
+                print("No se encontraron artistas en tus tops.")
+                print()
+                continue
+
+            print()
+            format_data(
+                data=top_artists,
+                title="Top artistas",
+                columns=[
+                    {"header": "Nombre", "key": "name", "style": "cyan"},
+                    # {
+                    #     "header": "Generos",
+                    #     "style": "green",
+                    #     "value": lambda artist: ", ".join(artist.get("genres", [])) if artist.get("genres") else "N/D",
+                    # },
+                    # {"header": "Popularidad", "key": "popularity", "style": "yellow"},
+                    # {"header": "ID", "key": "id", "style": "red"},
+                ],
+            )
+            print()
         else:
-            print("command no reconocido")
+            print()
+            print("Comando no reconocido. Utilice 'help' para ver todos los comandos disponibles.")
+            print()
 
 # 001 - 2026-06-13 21:12:34 - Se agrega formatter dinamico con Rich para albums
 def format_data(data, columns, title="Resultados"):
@@ -158,6 +319,63 @@ def format_data(data, columns, title="Resultados"):
         table.add_row(*row)
 
     console.print(table)
+
+def help_command():
+    # 008 - 2026-06-17 18:12:32 - Se mueve objeto de help a utils
+    # obj = [
+    #     {
+    #         "command": "help",
+    #         "description": "Muestra el listado de comandos disponibles.",
+    #         "usage": "help",
+    #     },
+    #     {
+    #         "command": "login",
+    #         "description": "Inicia sesion en Spotify.",
+    #         "usage": "login",
+    #     },
+    #     {
+    #         "command": "status",
+    #         "description": "Muestra el usuario conectado.",
+    #         "usage": "status",
+    #     },
+    #     {
+    #         "command": "info",
+    #         "description": "Busca un artista por nombre.",
+    #         "usage": "info <nombre del artista>",
+    #     },
+    #     {
+    #         "command": "albums",
+    #         "description": "Obtiene los albums de un artista.",
+    #         "usage": "albums <nombre del artista>",
+    #     },
+    #     {
+    #         "command": "tracks",
+    #         "description": "Obtiene las canciones de un album por ID.",
+    #         "usage": "tracks <id del album>",
+    #     },
+    #     {
+    #         "command": "playlist get-all",
+    #         "description": "Obtiene todas las playlists del usuario autenticado.",
+    #         "usage": "playlist get-all",
+    #     },
+    #     {
+    #         "command": "exit",
+    #         "description": "Finaliza la aplicacion.",
+    #         "usage": "exit",
+    #     },
+    # ]
+    obj = get_help_commands()
+
+    format_data(
+        data=obj,
+        title="Comandos disponibles",
+        columns=[
+            {"header": "Comando", "key": "command", "style": "cyan"},
+            {"header": "Descripcion", "key": "description", "style": "green"},
+            {"header": "Uso", "key": "usage", "style": "magenta"},
+        ],
+    )
+
 
 if __name__ == "__main__":
     main()
