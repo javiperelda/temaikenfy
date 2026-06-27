@@ -27,7 +27,8 @@ class AuthService:
         self.redirect_uri = os.getenv("SPOTIFY_REDIRECT_URI", "http://127.0.0.1:8888/callback")
         # 009 - 2026-06-17 22:34:06 - Se agrega soporte para top items del usuario
         # self.user_scopes = os.getenv("SPOTIFY_USER_SCOPES", "playlist-read-private playlist-read-collaborative")
-        self.user_scopes = os.getenv("SPOTIFY_USER_SCOPES", "playlist-read-private playlist-read-collaborative user-top-read")
+        # self.user_scopes = os.getenv("SPOTIFY_USER_SCOPES", "playlist-read-private playlist-read-collaborative user-top-read")
+        self.user_scopes = os.getenv("SPOTIFY_USER_SCOPES", "playlist-read-private playlist-read-collaborative user-top-read user-library-read user-read-playback-state user-read-currently-playing user-modify-playback-state user-read-recently-played")
 
         self.access_token = None
         self.token_expires_at = 0
