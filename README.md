@@ -164,6 +164,8 @@ TEMAIKENFY_DB_NAME=Nombre del archivo que se generara para la db (temaikenfy.db)
 | `queue` | `queue` | Muestra la cola de reproduccion. |
 | `add-queue` | `add-queue <spotify_uri> [device_id]` | Agrega una cancion o episodio a la cola. |
 
+<img src="./imgs/esquema_regador.png" alt="Regador" width="800" />
+
 ## Ejemplos
 
 Buscar un artista:
