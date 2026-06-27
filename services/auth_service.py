@@ -1,5 +1,4 @@
 from dotenv import load_dotenv
-# 004 - 2026-06-14 01:34:55 - Se agrega login OAuth PKCE con refresh token
 import base64
 import hashlib
 import http.server
@@ -11,12 +10,13 @@ import requests
 import urllib.parse
 import webbrowser
 from pathlib import Path
+from database import save_auth_token, load_auth_token
 
 
 ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
 load_dotenv(dotenv_path=ENV_PATH)
-# 004 - 2026-06-14 01:34:55 - Se agrega login OAuth PKCE con refresh token
-TOKEN_CACHE_PATH = Path(__file__).resolve().parent.parent / "auth" / "token_cache.json"
+# Se comenta este bloque, ya que se implemento SQLite, en lugar de guardarlo en un json, se guarda en la db.
+# TOKEN_CACHE_PATH = Path(__file__).resolve().parent.parent / "auth" / "token_cache.json"
 
 class AuthService:
     def __init__(self):
@@ -241,19 +241,39 @@ class AuthService:
         return token_data
 
     # 004 - 2026-06-14 01:34:55 - Se agrega login OAuth PKCE con refresh token
-    def load_user_token_cache(self):
-        if not TOKEN_CACHE_PATH.exists():
-            return None
+    def load_user_token_cache(self):      
+        token_data = load_auth_token()
 
-        with open(TOKEN_CACHE_PATH, "r", encoding="utf-8") as token_file:
-            return json.load(token_file)
+        if token_data is None:
+            return None  
+        
+        return token_data
+
+        # Se comenta este bloque, ya que se implemento SQLite, en lugar de guardarlo en un json, se guarda en la db.
+        # if not TOKEN_CACHE_PATH.exists():
+        #     return None
+
+        # with open(TOKEN_CACHE_PATH, "r", encoding="utf-8") as token_file:
+        #     return json.load(token_file)
 
     # 004 - 2026-06-14 01:34:55 - Se agrega login OAuth PKCE con refresh token
     def save_user_token_cache(self, token_data):
-        TOKEN_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(TOKEN_CACHE_PATH, "w", encoding="utf-8") as token_file:
-            json.dump(token_data, token_file, indent=4)
+        # Nueva funcionalidad para que el token se almacene en una db.
+        save_auth_token(
+            access_token=token_data["access_token"],
+            refresh_token=token_data.get("refresh_token"),
+            expires_in=token_data["expires_in"],
+            expires_at=token_data["expires_at"],
+            scope=token_data.get("scope"),
+            token_type=token_data.get("token_type", "Bearer")
+        )
+
+        # Se comenta este bloque, ya que se implemento SQLite, en lugar de guardarlo en un json, se guarda en la db.
+        # TOKEN_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+        # with open(TOKEN_CACHE_PATH, "w", encoding="utf-8") as token_file:
+        #     json.dump(token_data, token_file, indent=4)
 
     # ----------------------------------------------------------------------------------------------------
     # 005 - 2026-06-14 10:47:47 - Se documenta bloque de login OAuth PKCE

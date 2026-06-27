@@ -1,6 +1,10 @@
 from router.command_router import CommandRouter
+from database import init_db
 
-def main():
+def main():    
+
+    init_db() # Inicializa la base de datos SQLite.
+
     app = CommandRouter()
     list_commands = {
         "help",
