@@ -72,7 +72,7 @@ SPOTIFY_USER_SCOPES=playlist-read-private playlist-read-collaborative user-top-r
 TEMAIKENFY_DB_PATH=./data
 
 # Nombre del archivo SQLite local.
-TEMAIKENFY_DB_NAME=temaikenfy.sqlite
+TEMAIKENFY_DB_NAME=temaikenfy.db
 ```
 
 En el dashboard de Spotify Developer, configurar el mismo Redirect URI:
@@ -111,14 +111,12 @@ help
 
 Temaikenfy utiliza SQLite para almacenar informacion local de autenticacion, como el token de Spotify obtenido durante el login. Esto permite reutilizar la sesion y renovar el acceso sin tener que iniciar sesion manualmente en cada ejecucion.
 
-La ubicacion de la base se configura con estas variables:
+Se requiere configurar las siguientes variables:
 
 ```env
-TEMAIKENFY_DB_PATH=./data
-TEMAIKENFY_DB_NAME=temaikenfy.sqlite
+TEMAIKENFY_DB_PATH=Directorio donde se almacenara la db.
+TEMAIKENFY_DB_NAME=Nombre del archivo que se generara para la db (temaikenfy.db)
 ```
-
-SQLite forma parte de la biblioteca estandar de Python, por eso no requiere una dependencia adicional en `requirements.txt`.
 
 ## Comandos
 
